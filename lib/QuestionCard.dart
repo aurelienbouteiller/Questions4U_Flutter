@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:questions_4_u/Answer.dart';
 import 'package:questions_4_u/Question.dart';
-import 'package:flare_flutter/flare_actor.dart';
 
 class QuestionCard extends StatefulWidget {
   const QuestionCard({
@@ -10,41 +9,21 @@ class QuestionCard extends StatefulWidget {
     @required this.unescape,
     @required this.questionInfo,
     @required this.answers,
+    @required this.onAnswerPress,
+    @required this.answered,
   }) : super(key: key);
 
   final HtmlUnescape unescape;
   final Question questionInfo;
   final List<String> answers;
+  final Function onAnswerPress;
+  final bool answered;
 
   @override
   _QuestionCardState createState() => _QuestionCardState();
 }
 
 class _QuestionCardState extends State<QuestionCard> {
-  bool answered = false;
-  void onAnswerPress(answer) {
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          var flareFilename = this.widget.questionInfo.correctAnswer == answer
-              ? "goodAnswer"
-              : "wrongAnswer";
-          return Center(
-            child: Container(
-              height: 200,
-              width: 200,
-              child: FlareActor("assets/$flareFilename.flr",
-                  alignment: Alignment.center,
-                  animation: "Checked",
-                  shouldClip: false),
-            ),
-          );
-        });
-    this.setState(() {
-      this.answered = true;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -74,8 +53,8 @@ class _QuestionCardState extends State<QuestionCard> {
                     questionInfo: widget.questionInfo,
                     isCorrectAnswer: widget.questionInfo.correctAnswer ==
                         widget.answers[index],
-                    onPress: () => onAnswerPress(widget.answers[index]),
-                    answered: this.answered)),
+                    onPress: () => widget.onAnswerPress(widget.answers[index]),
+                    answered: widget.answered)),
           ),
         ],
       ),

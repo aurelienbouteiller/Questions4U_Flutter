@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:http/http.dart';
-import 'package:questions_4_u/Question.dart';
-import 'package:questions_4_u/QuestionCard.dart';
 import 'dart:convert';
 import "package:html_unescape/html_unescape.dart";
+import 'package:flare_flutter/flare_actor.dart';
+import 'package:questions_4_u/Question.dart';
+import 'package:questions_4_u/QuestionCard.dart';
 
 class QuestionScreen extends StatefulWidget {
   final Widget child;
@@ -26,9 +26,9 @@ class QuestionScreen extends StatefulWidget {
 class _QuestionScreenState extends State<QuestionScreen> {
   final unescape = HtmlUnescape();
   final answers = List();
-  bool answered = false;
   bool questionLoading = true;
   bool reloadQuestionLoading = false;
+  bool answered = false;
   Question questionInfo;
 
   @override
@@ -41,9 +41,9 @@ class _QuestionScreenState extends State<QuestionScreen> {
     this.setState(() {
       if (reload == true) {
         this.reloadQuestionLoading = true;
-      } else {
-        this.questionLoading = true;
+        this.answered = false;
       }
+      this.questionLoading = true;
     });
     final response = await get(
         'https://opentdb.com/api.php?amount=1&category=$categoryId&difficulty=$difficulty');
@@ -52,11 +52,35 @@ class _QuestionScreenState extends State<QuestionScreen> {
           QuestionData.fromJson(json.decode(response.body));
       this.setState(() {
         this.questionLoading = false;
+        this.reloadQuestionLoading = false;
         this.questionInfo = questionData.results[0];
       });
     } else {
       throw Exception('Failed to load question info');
     }
+  }
+
+  void onAnswerPress(answer) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          var flareFilename = this.questionInfo.correctAnswer == answer
+              ? "goodAnswer"
+              : "wrongAnswer";
+          return Center(
+            child: Container(
+              height: 200,
+              width: 200,
+              child: FlareActor("assets/$flareFilename.flr",
+                  alignment: Alignment.center,
+                  animation: "Checked",
+                  shouldClip: false),
+            ),
+          );
+        });
+    this.setState(() {
+      this.answered = true;
+    });
   }
 
   @override
@@ -87,8 +111,12 @@ class _QuestionScreenState extends State<QuestionScreen> {
                         child: QuestionCard(
                             unescape: unescape,
                             questionInfo: questionInfo,
-                            answers: this.questionInfo.incorrectAnswers
-                              ..add(questionInfo.correctAnswer)),
+                            onAnswerPress: this.onAnswerPress,
+                            answered: this.answered,
+                            answers: ([this.questionInfo.correctAnswer]
+                                  ..addAll(this.questionInfo.incorrectAnswers))
+                                .toList()
+                                  ..sort()),
                       )),
               ),
               Expanded(
