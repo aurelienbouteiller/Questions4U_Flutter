@@ -5,6 +5,8 @@ import "package:html_unescape/html_unescape.dart";
 import 'package:flare_flutter/flare_actor.dart';
 import 'package:questions_4_u/Question.dart';
 import 'package:questions_4_u/QuestionCard.dart';
+import 'package:questions_4_u/models/QuestionHistoryModel.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QuestionScreen extends StatefulWidget {
   final Widget child;
@@ -60,13 +62,30 @@ class _QuestionScreenState extends State<QuestionScreen> {
     }
   }
 
-  void onAnswerPress(answer) {
+  void onAnswerPress(answer) async {
+    final bool isCorrectAnswer = this.questionInfo.correctAnswer == answer;
+    var questionsHistory = <QuestionHistoryModel>[];
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String questionsHistoryJSON = prefs.getString('questionsHistory');
+    print("JSON: $questionsHistoryJSON");
+    if (questionsHistoryJSON != null) {
+      final List questionsHistorySaved = jsonDecode(questionsHistoryJSON);
+      questionsHistory = questionsHistorySaved.map<QuestionHistoryModel>((elt) => QuestionHistoryModel.fromJson(elt)).toList();
+      print("newList: $questionsHistory, ${questionsHistory.runtimeType}");
+    }
+
+    QuestionHistoryModel questionHistory = QuestionHistoryModel(
+        question: this.questionInfo.question,
+        isCorrectAnswer: isCorrectAnswer,
+        answer: this.questionInfo.correctAnswer);
+    questionsHistory.add(questionHistory);
+    String questionHistoryEncoded = jsonEncode(questionsHistory);
+    await prefs.setString('questionsHistory', questionHistoryEncoded);
+
     showDialog(
         context: context,
         builder: (BuildContext context) {
-          var flareFilename = this.questionInfo.correctAnswer == answer
-              ? "goodAnswer"
-              : "wrongAnswer";
+          var flareFilename = isCorrectAnswer ? "goodAnswer" : "wrongAnswer";
           return Center(
             child: Container(
               height: 200,
